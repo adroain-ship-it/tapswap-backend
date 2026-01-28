@@ -17,6 +17,13 @@ const io = socketIo(server, {
 });
 
 app.use(cors());
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'Backend is running!',
+    message: '🚀 TapSwap Game API',
+    endpoints: ['/api/auth/init', '/api/tap', '/api/user']
+  });
+});
 app.use(express.json());
 
 console.log('--- START SERWERA ---');
