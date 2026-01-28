@@ -24,6 +24,46 @@ app.get('/', (req, res) => {
     endpoints: ['/api/auth/init', '/api/tap', '/api/user']
   });
 });
+// Init endpoint - dla frontendu
+app.post('/api/auth/init', async (req, res) => {
+  try {
+    const initData = req.headers['x-telegram-init-data'] || req.body.initData || 'dev_mode';
+    
+    console.log('🔐 Init request from:', initData.substring(0, 20) + '...');
+    
+    // Dev mode - bez weryfikacji
+    if (!initData || initData === 'dev_mode' || initData === 'undefined') {
+      return res.json({
+        success: true,
+        user: {
+          telegramId: '123456789',
+          username: 'DevUser',
+          coins: 0,
+          totalEarned: 0,
+          energy: 1000,
+          maxEnergy: 1000,
+          league: 'BRONZE',
+          skins: ['default'],
+          activeSkin: 'default'
+        },
+        message: 'Dev mode active'
+      });
+    }
+    
+    // TODO: Telegram auth verification
+    res.json({
+      success: true,
+      message: 'Auth endpoint working'
+    });
+    
+  } catch (error) {
+    console.error('❌ Init error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+console.log('✅ Auth init endpoint loaded');
+
 app.use(express.json());
 
 console.log('--- START SERWERA ---');
