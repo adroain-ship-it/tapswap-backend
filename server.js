@@ -341,9 +341,18 @@ app.post('/api/auth/init', authMiddleware, async (req, res) => {
         username: username || '',
         firstName: first_name || '',
         lastName: last_name || '',
+        coins: 5000,
+        totalEarned: 5000,
         unlockedSkins: ['default']
       });
       
+      // Welcome bonus - 10min 2x boost
+  user.boosters.twix = {
+    active: true,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    level: 0
+  };
+
       if (referralCode) {
         const referrer = await User.findOne({ telegramId: parseInt(referralCode) });
         if (referrer && referrer.telegramId !== id) {
