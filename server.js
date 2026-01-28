@@ -2296,10 +2296,25 @@ app.post('/api/stars/webhook', async (req, res) => {
 
 console.log('✅ Telegram Stars payment endpoints loaded')
 
-mongoose.connect(process.env.MONGODB_URI, {
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
+const uri = process.env.MONGODB_URI;
+
+// TEST LOG - sprawdzamy co widzi Koyeb
+if (!uri) {
+    console.log("❌ KRYTYCZNY BŁĄD: Zmienna MONGODB_URI nie została znaleziona w Koyeb!");
+} else {
+    // To zamaskuje hasło w logach (zmieni je na ****)
+    const maskedUri = uri.replace(/:([^@]+)@/, ":****@");
+    console.log("⏳ Próba połączenia z linkiem: " + maskedUri);
+}
+
+mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 5000 // Serwer szybciej powie nam, że coś jest nie tak
 })
+.then(() => console.log("✅ SUKCES: Połączono z MongoDB Atlas!"))
+.catch(err => {
+    console.log("❌ BŁĄD POŁĄCZENIA:");
+    console.log(err.message);
+});
 .then(() => {
   console.log('✅ SUKCES: Twoja gra jest połączona z chmurą MongoDB!');
   
