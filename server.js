@@ -2390,3 +2390,94 @@ mongoose.connect(process.env.MONGODB_URI, {
   console.log('2. Czy w MongoDB Atlas status Network Access to "Active" dla 0.0.0.0/0?');
   console.log('3. Czy Twój Firewall w Windows nie blokuje aplikacji Node.js?');
 });
+// ===== WKLEJ TO NA SAMYM KOŃCU server.js =====
+// (Po wszystkich innych endpointach)
+
+// ===== ADSGRAM REWARD WEBHOOK =====
+app.get('/api/adsgram/reward', async (req, res) => {
+  try {
+    const userId = req.query.userid;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userid parameter' });
+    }
+
+    console.log(`📥 AdSgram reward webhook received for user: ${userId}`);
+
+    const user = await User.findOne({ telegramId: parseInt(userId) });
+    
+    if (!user) {
+      console.error(`❌ User not found: ${userId}`);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.banned) {
+      return res.status(403).json({ error: 'User is banned' });
+    }
+
+    const rewardAmount = 100;
+
+    user.coins += rewardAmount;
+    user.totalEarned += rewardAmount;
+
+    const leagueInfo = getLeagueProgress(user.totalEarned);
+    user.league = leagueInfo.current.id;
+
+    await user.save();
+    await updateGlobalStats(rewardAmount, 0);
+
+    if (user.referredBy) {
+      await addReferralEarnings(user.referredBy, rewardAmount);
+    }
+
+    console.log(`✅ AdSgram reward: ${user.username} earned ${rewardAmount} coins`);
+
+    res.status(200).json({
+      success: true,
+      userId: userId,
+      reward: rewardAmount,
+      newBalance: user.coins
+    });
+
+  } catch (error) {
+    console.error('❌ AdSgram reward webhook error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+console.log('✅ AdSgram reward webhook endpoint loaded');
+
+// ===== USER IDs EXPORT FOR ADSGRAM =====
+app.get('/api/admin/export-user-ids', async (req, res) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    const ADMIN_SECRET = 'cashfarmer2024';
+    
+    if (adminKey !== ADMIN_SECRET) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    console.log('📥 Exporting user IDs for AdSgram...');
+
+    const users = await User.find(
+      { banned: false },
+      { telegramId: 1, _id: 0 }
+    );
+    
+    const userIdsList = users.map(u => u.telegramId).join('\n');
+    
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', 'attachment; filename="user_ids.txt"');
+    res.send(userIdsList);
+    
+    console.log(`✅ Exported ${users.length} user IDs`);
+
+  } catch (error) {
+    console.error('❌ Export error:', error);
+    res.status(500).json({ error: 'Export failed' });
+  }
+});
+
+console.log('✅ Admin export endpoint loaded');
+
+// ===== KONIEC - NIE DODAWAJ NIC PO TYM! =====
