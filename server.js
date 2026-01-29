@@ -2306,6 +2306,68 @@ app.post('/api/stars/webhook', async (req, res) => {
 
 console.log('✅ Telegram Stars payment endpoints loaded')
 
+// ===== DODAJ DO server.js =====
+// AdSgram Reward Webhook (GET endpoint)
+// Umieść PRZED mongoose.connect()
+
+app.get('/api/adsgram/reward', async (req, res) => {
+  try {
+    const userId = req.query.userid;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userid parameter' });
+    }
+
+    console.log(`📥 AdSgram reward webhook received for user: ${userId}`);
+
+    const user = await User.findOne({ telegramId: parseInt(userId) });
+    
+    if (!user) {
+      console.error(`❌ User not found: ${userId}`);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.banned) {
+      return res.status(403).json({ error: 'User is banned' });
+    }
+
+    // Reward amount (AdSgram default: 100 coins)
+    const rewardAmount = 100;
+
+    // Add coins
+    user.coins += rewardAmount;
+    user.totalEarned += rewardAmount;
+
+    // Update league
+    const leagueInfo = getLeagueProgress(user.totalEarned);
+    user.league = leagueInfo.current.id;
+
+    await user.save();
+    await updateGlobalStats(rewardAmount, 0);
+
+    // Referral earnings
+    if (user.referredBy) {
+      await addReferralEarnings(user.referredBy, rewardAmount);
+    }
+
+    console.log(`✅ AdSgram reward: ${user.username} earned ${rewardAmount} coins`);
+
+    // Return success (AdSgram expects 200 OK)
+    res.status(200).json({
+      success: true,
+      userId: userId,
+      reward: rewardAmount,
+      newBalance: user.coins
+    });
+
+  } catch (error) {
+    console.error('❌ AdSgram reward webhook error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+console.log('✅ AdSgram reward webhook endpoint loaded');
+
 mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
