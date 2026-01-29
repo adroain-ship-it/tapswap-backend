@@ -1680,7 +1680,7 @@ async function initializeDefaults() {
         title: 'Join Telegram Channel',
         description: 'Subscribe to our channel',
         reward: 500,
-        url: 'https://t.me/your_channel',
+        url: 'https://t.me/CashFarmersChannel',
         icon: '📢'
       },
       {
